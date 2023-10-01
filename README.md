@@ -1,7 +1,5 @@
 # CAN-Analyse-M5AtomCAN
 
-<img src="https://github.com/Schury1998/CAN-Analyse-M5AtomCAN/blob/master/CAN-M5Atom.PNG" alt="CAN-M5Atom" width="350">
-
 ## Description
 Tool to analyse CAN Messages with different baudrates.
 
