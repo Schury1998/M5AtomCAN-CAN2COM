@@ -135,7 +135,7 @@ void input_Message()
 
     if (rx_frame.FIR.B.RTR == CAN_RTR) 
     {
-      Serial.printf("CAN MSG: 0x%X [%d] <>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("CAN MSG: 0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
     } 
     else 
     {
