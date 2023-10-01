@@ -143,7 +143,7 @@ void input_Message()
       for (int i = 0; i < rx_frame.FIR.B.DLC; i++) 
       {
         if(i!=0) Serial.printf(":");
-        Serial.printf("%X", rx_frame.data.u8[i]);
+        Serial.printf("%02X", rx_frame.data.u8[i]);
       }
       Serial.printf(">\n");
     }

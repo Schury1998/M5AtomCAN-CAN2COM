@@ -3,9 +3,6 @@
 ## Description
 Tool to analyse CAN Messages with different baudrates.
 
-**SavvyCAN**\
-Download Savvy CAN: https://www.savvycan.com/ to analyse the BUS
-
 **SerialInterface**\
 The ESP32 uses an baudrate from 115200
 
