@@ -3,6 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+log.txt
 
 #the uno code is only for debugging and testing
 code_for_arduino_uno
@@ -10,5 +11,4 @@ code_for_arduino_uno
 #the workspace includes the esp32, uno and gui code 
 CAN_Analyse2.0.code-workspace
 
-#as long as the GUI is in Work
-GUI 
+
