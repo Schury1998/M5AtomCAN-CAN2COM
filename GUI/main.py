@@ -1,4 +1,5 @@
 import serial 
+import serial.tools.list_ports
 import time
 from datetime import date
 from tkinter import *
@@ -9,6 +10,7 @@ class GUI:
     def __init__(self, root):
         #setting title
         root.title("SUSF-CAN-Explorer v1.0.0.0")
+        #root.iconbitmap("ICON.ico")
         #setting window size
         width=1000
         height=300
@@ -21,9 +23,29 @@ class GUI:
         self.S = Scrollbar(root)
         self.T = Text(root, state='disabled', height=4, width=800)
 
+        self.port_var = StringVar(root)
+        self.ports = [port.device for port in serial.tools.list_ports.comports()]
+        self.port_menu = OptionMenu(root, self.port_var, self.ports)
+        self.port_menu.pack(side=RIGHT)
+        self.frist_run_choose_serial = True
+
         self.trace_active = IntVar()
         c1 = Checkbutton(root, text='ACTIVATE\ntracing & logging', variable=self.trace_active, onvalue=1, offvalue=0)
-        c1.pack(side='right')
+        c1.pack(side=RIGHT)
+
+
+    def coose_SERIAL(self):
+        self.ports = [port.device for port in serial.tools.list_ports.comports()]
+        self.port_menu["menu"].delete(0, "end")
+        for value in self.ports:
+            self.port_menu["menu"].add_command(label=value, command=lambda v=value: self.port_var.set(v))
+
+        if  (self.frist_run_choose_serial is True and len(self.ports) >= 1):
+            self.port_var.set(self.ports[0])
+            self.frist_run_choose_serial = False
+        elif(len(self.ports) < 1):
+            self.port_var.set('NULL')
+        return self.port_var.get()
 
     def output_CAN(self, string):
         self.S.pack(side=RIGHT, fill=Y)
@@ -38,21 +60,15 @@ class GUI:
     def acitve_trace_box(self):
         return self.trace_active.get()
 
+def init_SERIAL():
+    if (GUI.coose_SERIAL() != 'NULL'):
+        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=9600, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
+    return s
 
-if __name__ == "__main__":
-    
-    root = Tk()
-    GUI = GUI(root)
-
-    s = serial.Serial(port="COM6", baudrate=9600, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
-
-    serialString = ""  # Used to hold data coming over UART
-    init_time = time.time_ns()
-    init_time_str = str(init_time)
+def init_LOGGING_FILE():
     aktuellesDatum = str(date.today())
     tiemstamp = str(time.asctime())
     timestamp_list = tiemstamp.split()
-    message_number = 0
 
     fiele_name = aktuellesDatum + "_" + timestamp_list[3].replace(":","-") +  "_log" +  ".txt"
     f = open("log.txt", "w")
@@ -94,64 +110,89 @@ if __name__ == "__main__":
     f.write(ausgabe_string)
     GUI.output_CAN(ausgabe_string)
     f.close()
+    return fiele_name
+
+if __name__ == "__main__":
+    
+    root = Tk()
+    GUI = GUI(root)
+    message_number = 0
+    inititialisierung = False
+    port_after_init = ""
 
     while 1:
+
         root.update()
         #root.mainloop()
 
-        #to ignore incoming messages when the checkBox is not acitve
-        if(GUI.acitve_trace_box() !=  1):
-            s.read_all() 
+        if ((GUI.coose_SERIAL() != 'NULL') and inititialisierung is False):
+            s= init_SERIAL()
+            fiele_name = init_LOGGING_FILE()
+            init_time = time.time_ns()
+            inititialisierung = True
+            port_after_init = GUI.coose_SERIAL()
 
-        # Wait until there is data waiting in the serial buffer
-        if s.in_waiting > 0 and GUI.acitve_trace_box() ==  1:
+        elif (port_after_init != GUI.coose_SERIAL() and inititialisierung is True ):
+            s.close()
+            s= init_SERIAL()
+            inititialisierung = True
+            port_after_init = GUI.coose_SERIAL()
 
-            # Read data out of the buffer until a carraige return / new line is found
-            serialString = s.readline()
 
-            # Print the contents of the serial data
-            try:
-                list = serialString.decode("Ascii").split()
-                del list[0]
-                del list[0]
-                timestamp = int((time.time_ns() - init_time) / 1000) #for ms 
-                timestamp_string = str(timestamp) 
-                timestamp_string_len = len(timestamp_string)
+        elif (GUI.coose_SERIAL() != 'NULL' and inititialisierung is True):
+            #to ignore incoming messages when the checkBox is not acitve
+            if(GUI.acitve_trace_box() !=  1):
+                s.read_all() 
 
-                if (timestamp_string_len <= 3):
-                    timestamp_string = 0 + "." + timestamp_string[timestamp_string_len-3:]
-                else:
-                    timestamp_string = timestamp_string[:timestamp_string_len-3] + "." + timestamp_string[timestamp_string_len-3:]
+            # Wait until there is data waiting in the serial buffer
+            if s.in_waiting > 0 and GUI.acitve_trace_box() ==  1:
 
-                list.insert(0, timestamp_string)
-                list[1] = list[1].replace("0x","")
-                list[2] = list[2].replace("[","")
-                list[2] = list[2].replace("]","")
-                list[3] = list[3].replace("<","")
-                list[3] = list[3].replace(">","")
-                list[3] = list[3].replace(">","")
-                list[3] = list[3].replace(":"," ")
-                
-                # Insert missing Parameters
-                message_number = message_number + 1
-                message_number_string = str(message_number) + ")"
-                list.insert(0, message_number_string)
-                list.insert(2, "1") #Bus = 1
-                list.insert(3, "Rx") #Type = Rx
-                list.insert(5, "-") #Reserved
+                # Read data out of the buffer until a carraige return / new line is found
+                serialString = s.readline()
 
-                #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
-                print(list)
-                f = open("log.txt", "a")
-                ausgabe_string = "\t" + list[0] + "\t\t" + list[1] + " " + list[2] + " " + list[3] + "\t\t\t" + list[4] + " " + list[5] + " " + list[6] + "\t\t" + list[7] + "\n"
+                # Print the contents of the serial data
+                try:
+                    list = serialString.decode("Ascii").split()
+                    del list[0]
+                    del list[0]
+                    timestamp = int((time.time_ns() - init_time) / 1000) #for ms 
+                    timestamp_string = str(timestamp) 
+                    timestamp_string_len = len(timestamp_string)
 
-                f.write(ausgabe_string)
-                GUI.output_CAN(ausgabe_string)
+                    if (timestamp_string_len <= 3):
+                        timestamp_string = 0 + "." + timestamp_string[timestamp_string_len-3:]
+                    else:
+                        timestamp_string = timestamp_string[:timestamp_string_len-3] + "." + timestamp_string[timestamp_string_len-3:]
 
-                f.close()
+                    list.insert(0, timestamp_string)
+                    list[1] = list[1].replace("0x","")
+                    list[2] = list[2].replace("[","")
+                    list[2] = list[2].replace("]","")
+                    list[3] = list[3].replace("<","")
+                    list[3] = list[3].replace(">","")
+                    list[3] = list[3].replace(">","")
+                    list[3] = list[3].replace(":"," ")
+                    
+                    # Insert missing Parameters
+                    message_number = message_number + 1
+                    message_number_string = str(message_number) + ")"
+                    list.insert(0, message_number_string)
+                    list.insert(2, "1") #Bus = 1
+                    list.insert(3, "Rx") #Type = Rx
+                    list.insert(5, "-") #Reserved
 
-            except:
-                pass
-    
+                    #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
+                    print(list)
+                    f = open("log.txt", "a")
+                    ausgabe_string = "\t" + list[0] + "\t\t" + list[1] + " " + list[2] + " " + list[3] + "\t\t\t" + list[4] + " " + list[5] + " " + list[6] + "\t\t" + list[7] + "\n"
+
+                    f.write(ausgabe_string)
+                    GUI.output_CAN(ausgabe_string)
+
+                    f.close()
+
+                except:
+                    pass
+        
 
 
