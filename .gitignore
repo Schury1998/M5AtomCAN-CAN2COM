@@ -4,6 +4,7 @@
 .vscode/launch.json
 .vscode/ipch
 GUI/versuch_eel_lib
+GUI/tkinter_alt
 log.txt
 CAN.sym
 

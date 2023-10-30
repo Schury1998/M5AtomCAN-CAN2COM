@@ -2,15 +2,12 @@ import serial
 import serial.tools.list_ports
 import time
 from datetime import date
-from tkinter import *
+import customtkinter
 
 
 class GUI:
 
     def __init__(self, root):
-        #setting title
-        root.title("SUSF-CAN-Explorer v1.0.0.0")
-        #root.iconbitmap("ICON.ico")
         #setting window size
         width=1100
         height=300
@@ -18,42 +15,58 @@ class GUI:
         screenheight = root.winfo_screenheight()
         alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
         root.geometry(alignstr)
-        root.resizable(width=True, height=True)
 
-        self.S = Scrollbar(root)
-        self.T = Text(root, state='disabled', height=4, width=800)
+        # Konfigurieren Sie das Grid-System
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
 
-        self.port_var = StringVar(root)
+        #setting title
+        root.title("SUSF-CAN-Explorer v1.0.0.0")
+        customtkinter.set_appearance_mode("dark")
+        customtkinter.set_default_color_theme("blue")
+        self.trace_active = customtkinter.IntVar()
+        connect_button = customtkinter.CTkCheckBox(root, text='LOGGING', variable=self.trace_active, onvalue=1, offvalue=0)
+        connect_button.grid(row=0, column=0)
+        #root.iconbitmap("ICON.ico")
+
+        self.T = customtkinter.CTkTextbox(root, activate_scrollbars=True)
+        self.S = customtkinter.CTkScrollbar(root,  command=self.T.yview)
+        
+        self.port_var = customtkinter.StringVar(root)
         self.ports = [port.device for port in serial.tools.list_ports.comports()]
-        self.port_menu = OptionMenu(root, self.port_var, self.ports)
-        self.port_menu.pack(side=RIGHT)
+        self.port_menu = customtkinter.CTkOptionMenu(root, values=self.ports)
+        self.port_menu.grid(row=0, column=5)
+
+        #optionmenu.set(self.port_var)
+        #self.port_menu = customtkinter.CTkOptionMenu(root, self.port_var, self.ports)
+        #self.port_menu.pack()
         self.frist_run_choose_serial = True
 
-        self.trace_active = IntVar()
-        c1 = Checkbutton(root, text='ACTIVATE\ntracing & logging', variable=self.trace_active, onvalue=1, offvalue=0)
-        c1.pack(side=RIGHT)
+        #self.trace_active = customtkinter.IntVar()
+        #c1 = customtkinter.CTkCheckBox(root, text='ACTIVATE\ntracing & logging', variable=self.trace_active, onvalue=1, offvalue=0)
+        #c1.pack(side="RIGHT")
 
 
     def coose_SERIAL(self):
-        self.ports = [port.device for port in serial.tools.list_ports.comports()]
-        self.port_menu["menu"].delete(0, "end")
-        for value in self.ports:
-            self.port_menu["menu"].add_command(label=value, command=lambda v=value: self.port_var.set(v))
+        return 'COM6'
+        #self.ports = [port.device for port in serial.tools.list_ports.comports()]
+        #self.port_menu["menu"].delete(0, "end")
+        #for value in self.ports:
+            #self.port_menu["menu"].add_command(label=value, command=lambda v=value: self.port_var.set(v))
 
-        if  (self.frist_run_choose_serial is True and len(self.ports) >= 1):
-            self.port_var.set(self.ports[0])
-            self.frist_run_choose_serial = False
-        elif(len(self.ports) < 1):
-            self.port_var.set('NULL')
-        return self.port_var.get()
+        #if  (self.frist_run_choose_serial is True and len(self.ports) >= 1):
+            #self.port_var.set(self.ports[0])
+            #self.frist_run_choose_serial = False
+        #if(len(self.ports) < 1):
+            #self.port_var.set('NULL'
+        #return self.port_var.get()
 
     def output_CAN(self, string):
-        self.S.pack(side=RIGHT, fill=Y)
-        self.T.pack(side=LEFT, fill=Y)
-        self.S.config(command=self.T.yview)
-        self.T.config(yscrollcommand=self.S.set)
+        self.T.grid(row=10, column=0, sticky="nsew")
+        self.S.configure(command=self.T.yview)
+        self.T.configure(yscrollcommand=self.S.set)
         self.T.configure(state='normal')
-        self.T.insert(END, string)
+        self.T.insert('end', string)
         self.T.configure(state='disabled')
         self.T.see('end')
 
@@ -127,7 +140,7 @@ def read_sym_file(file_path):
 
 if __name__ == "__main__":
     
-    root = Tk()
+    root = customtkinter.CTk()
     GUI = GUI(root)
     message_number = 0
     inititialisierung = False
