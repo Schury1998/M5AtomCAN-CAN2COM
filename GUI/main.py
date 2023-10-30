@@ -12,7 +12,7 @@ class GUI:
         root.title("SUSF-CAN-Explorer v1.0.0.0")
         #root.iconbitmap("ICON.ico")
         #setting window size
-        width=1000
+        width=1100
         height=300
         screenwidth = root.winfo_screenwidth()
         screenheight = root.winfo_screenheight()
@@ -76,7 +76,7 @@ def init_LOGGING_FILE():
     starttime_list = timestamp_list[3].split(":")
     starttime = int(starttime_list[0]) * 60 * 60 #h in s
     starttime = starttime + int(starttime_list[1]) * 60 #min in s
-    starttime_string = str(starttime) + "." + starttime_list[2] + "000000000000"
+    starttime_string = str(starttime) + "." + starttime_list[2]
 
     ausgabe_string = (";$FILEVERSION=1.3"
                     + "\n"
@@ -112,6 +112,19 @@ def init_LOGGING_FILE():
     f.close()
     return fiele_name
 
+def read_sym_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    id_datenbank = []
+    for i in range(1, len(lines)):
+        if 'ID=' in lines[i]:
+            id_str = lines[i].split('ID=')[1].strip()
+            id_str = id_str.replace('h', '')  
+            id_int = int(id_str) 
+            id_datenbank.append(lines[i-1].strip())
+            id_datenbank.append(id_int)
+    return id_datenbank
+
 if __name__ == "__main__":
     
     root = Tk()
@@ -119,6 +132,10 @@ if __name__ == "__main__":
     message_number = 0
     inititialisierung = False
     port_after_init = ""
+
+    id_datenbank = read_sym_file('CAN.sym')
+    print(id_datenbank)
+
 
     while 1:
 
@@ -184,13 +201,16 @@ if __name__ == "__main__":
                     #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
                     print(list)
                     f = open("log.txt", "a")
-                    ausgabe_string = "\t" + list[0] + "\t\t" + list[1] + " " + list[2] + " " + list[3] + "\t\t\t" + list[4] + " " + list[5] + " " + list[6] + "\t\t" + list[7] + "\n"
-
+                    ausgabe_string = " " + list[0] + " " + list[1] + " " + list[2] + " " + list[3] + " " + list[4] + " " + list[5] + " " + list[6] + " " + list[7] + "\n"
                     f.write(ausgabe_string)
-                    GUI.output_CAN(ausgabe_string)
-
                     f.close()
 
+                    if int(list[4]) in id_datenbank:
+                        index_id_datenbank = id_datenbank.index(int(list[4]))
+                        list[4] = list[4] + " -> " + id_datenbank[index_id_datenbank - 1]
+
+                    ausgabe_string = "" + list[0] + "\t" + list[1] + "\t\t" + list[2] + " " + list[3] + "\t" + list[4] + "\t\t\t\t\t" + list[5] + " " + list[6] + "\t" + list[7] + "\n"
+                    GUI.output_CAN(ausgabe_string)
                 except:
                     pass
         
