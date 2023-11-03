@@ -79,20 +79,25 @@ class GUI:
         return_string = ''
         try: 
             id = int(self.entry_id.get(), 16)
-            message = int(self.entry_message.get(), 16)
-            dlc = len(self.entry_message.get()) - 2
+            entry_message_loc = self.entry_message.get()
+            len_message = len(entry_message_loc)
+            entry_message_loc = entry_message_loc.replace('0x', '')
+            entry_message_byte = [entry_message_loc[i:i+2] for i in range(0, len(entry_message_loc), 2)]  #String in 2er-Blöcke 
+            entry_message_byte = '-'.join(entry_message_byte)
+            dlc = int((len(self.entry_message.get()) - 2) / 2)
         except:
             id = 0
-            message = 0
             dlc = 0
             pass
 
-        if self.button_clicked and id != 0:
+        if self.button_clicked and (id != 0 or dlc != 0) and (len_message % 2 == 0):
             self.button_clicked = False
-            return_string = str(id) + 'I' + str(dlc) + 'I' + str(message)
+            return_string = str(id) + '-' + str(dlc) + '-' + entry_message_byte
+            print('CAN Message out: ' + return_string)
             self.light.configure(text_color="yellow")
             return True, return_string
         else:
+            self.button_clicked = False
             self.light.configure(text_color="black")
             return False, return_string
 
@@ -128,7 +133,7 @@ class GUI:
 
 def init_SERIAL():
     if (GUI.coose_SERIAL() != 'NULL'):
-        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=9600, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
+        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
     return s
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -196,6 +201,12 @@ def read_sym_file(file_path):
             id_datenbank.append(id_int)
     return id_datenbank
 
+def close(s, f):
+    root.destroy()  
+    s.close()  
+    f.close()
+    print('Serial Port, File and Window closed')
+
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #MAIN-----------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -233,8 +244,15 @@ if __name__ == '__main__':
 
             bool_send, serial_output_string = GUI.button_send_clicked()
             if (bool_send is True and inititialisierung is True):
-                bytes_data = serial_output_string.encode('utf-8')
-                s.write(bytes_data) #EXAMPLE: 16I2I3 -> ID:0x10 DTL:2 Pyload:0x03
+                bytes_data = serial_output_string.encode('Ascii')
+                s.write(bytes_data) #EXAMPLE: 16I2I33I55 -> ID:0x10 DTL:2 Pyload:0x21 0x37
+
+            if s.is_open:
+                f = open('GUI/log.trc', 'a')
+                try:
+                    root.wm_protocol('WM_DELETE_WINDOW', lambda: close(s, f)) 
+                except:
+                    pass
 
             # Wait until there is data waiting in the serial buffer
             if s.in_waiting > 0 and GUI.acitve_trace_box() ==  1:
@@ -275,10 +293,9 @@ if __name__ == '__main__':
 
                     #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
                     print(list)
-                    f = open('GUI/log.trc', 'a')
+                    
                     ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
                     f.write(ausgabe_string)
-                    f.close()
 
                     if int(list[4]) in id_datenbank:
                         index_id_datenbank = id_datenbank.index(int(list[4]))

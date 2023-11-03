@@ -76,16 +76,7 @@ void output_message(CAN_frame_t& tx_frame)
   previousMillis = currentMillis;
 
   tx_frame.FIR.B.FF = CAN_frame_std;
-  tx_frame.MsgID = 0x0111;
-  tx_frame.FIR.B.DLC = 8;
-  tx_frame.data.u8[0] = 0x00;
-  tx_frame.data.u8[1] = msgcnt;
-  tx_frame.data.u8[2] = 0x00;
-  tx_frame.data.u8[3] = random(255);
-  tx_frame.data.u8[4] = random(255);
-  tx_frame.data.u8[5] = random(255);
-  tx_frame.data.u8[6] = random(255);
-  tx_frame.data.u8[7] = random(255);
+
   Serial.printf("TXs from 0x%08X, DLC %d, Data 0x", tx_frame.MsgID,
                 tx_frame.FIR.B.DLC);
   for (int i = 0; i < tx_frame.FIR.B.DLC; i++) {
@@ -98,17 +89,57 @@ void output_message(CAN_frame_t& tx_frame)
   }
 }
 
-void process_serialInput(String d) 
+int* process_serialInput() 
 {
-  if (d == "100" && preferences.getUInt("canspeed", 500) != 100) change_speed(100);
-  else if (d == "125" && preferences.getUInt("canspeed", 500) != 125) change_speed(125);
-  else if (d == "200" && preferences.getUInt("canspeed", 500) != 200) change_speed(200);
-  else if (d == "250" && preferences.getUInt("canspeed", 500) != 250) change_speed(250);
-  else if (d == "500" && preferences.getUInt("canspeed", 500) != 500) change_speed(500);
-  else if (d == "800" && preferences.getUInt("canspeed", 500) != 800) change_speed(800);
-  else if (d == "1000" && preferences.getUInt("canspeed", 500) != 1000) change_speed(1000);
-  else if (d == "Help") outputHelp();
-  Serial.println();
+  String d = "";
+   if (Serial.available() > 0) 
+   {
+    d = Serial.readString();
+   }
+
+    //Options for configuration 
+    if      (d == "100" && preferences.getUInt("canspeed", 500) != 100 ) change_speed(100);
+    else if (d == "125" && preferences.getUInt("canspeed", 500) != 125) change_speed(125);
+    else if (d == "200" && preferences.getUInt("canspeed", 500) != 200) change_speed(200);
+    else if (d == "250" && preferences.getUInt("canspeed", 500) != 250) change_speed(250);
+    else if (d == "500" && preferences.getUInt("canspeed", 500) != 500) change_speed(500);
+    else if (d == "800" && preferences.getUInt("canspeed", 500) != 800) change_speed(800);
+    else if (d == "1000" && preferences.getUInt("canspeed", 500) != 1000) change_speed(1000);
+    else if (d == "Help") outputHelp();
+
+    //User bedient ueber GUI
+    int last_index_of_I = d.lastIndexOf('-'); //Wenn Zeichen nicht enthalten return von -1
+    int str_len = d.length() + 1;
+    static int can_message[10]; // ID + DLC + 8 Byte Payload Max
+    if(last_index_of_I >= 0) 
+    { 
+      char char_array[str_len];
+      d.toCharArray(char_array, str_len);
+      char *teil;
+    
+      teil = strtok(char_array, "-"); 
+      int i = 0;
+      while (teil != NULL) 
+      {
+        can_message[i] = atoi(teil);
+        teil = strtok(NULL, "-");
+        ++i;
+      }
+    }
+    else
+    {
+      can_message[0] = 0; //ID
+      can_message[1] = 0; //DLC
+      can_message[2] = 0; //Payload
+      can_message[3] = 0; //Payload
+      can_message[4] = 0; //Payload
+      can_message[5] = 0; //Payload
+      can_message[6] = 0; //Payload
+      can_message[7] = 0; //Payload
+      can_message[8] = 0; //Payload
+      can_message[9] = 0; //Payload
+    }
+    return can_message;
 }
 
 void outputHelp() {
@@ -135,7 +166,7 @@ void input_Message()
 
     if (rx_frame.FIR.B.RTR == CAN_RTR) 
     {
-      Serial.printf("CAN MSG: 0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("CAN MSG: 0x%X [%d] <>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
     } 
     else 
     {
@@ -153,13 +184,37 @@ void input_Message()
 
 void loop() 
 {
+  static int* ptr_can_messages_array;
+
+  ptr_can_messages_array = process_serialInput();
+
   currentMillis = millis();
 
   M5.update();
 
-  input_Message();
-
-  if (Serial.available()) process_serialInput(Serial.readString());
-
   if (M5.Btn.wasPressed()) outputHelp();
+
+  if (!(ptr_can_messages_array[0] == 0 && ptr_can_messages_array[1] == 0 && ptr_can_messages_array[2] == 0 
+                                       && ptr_can_messages_array[3] == 0 && ptr_can_messages_array[4] == 0 
+                                       && ptr_can_messages_array[5] == 0 && ptr_can_messages_array[6] == 0 
+                                       && ptr_can_messages_array[7] == 0 && ptr_can_messages_array[8] == 0
+                                       && ptr_can_messages_array[9] == 0)) //Nur wenn alles == 0 wird keine Message gesendet
+  {
+    CAN_frame_t tx_frame;
+    tx_frame.MsgID      = ptr_can_messages_array[0];
+    tx_frame.FIR.B.DLC  = ptr_can_messages_array[1];
+    tx_frame.data.u8[0] = ptr_can_messages_array[0];
+    tx_frame.data.u8[1] = ptr_can_messages_array[1];
+    tx_frame.data.u8[2] = ptr_can_messages_array[2];
+    tx_frame.data.u8[3] = ptr_can_messages_array[3];
+    tx_frame.data.u8[4] = ptr_can_messages_array[4];
+    tx_frame.data.u8[5] = ptr_can_messages_array[5];
+    tx_frame.data.u8[6] = ptr_can_messages_array[6];
+    tx_frame.data.u8[7] = ptr_can_messages_array[7];
+
+    output_message(tx_frame);
+    ESP32Can.CANWriteFrame(&tx_frame);
+  }
+
+  input_Message();
 }
