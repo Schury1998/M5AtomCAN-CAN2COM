@@ -25,9 +25,9 @@ void setup() {
 
   unsigned int canspeed_int = preferences.getUInt("canspeed", 500);
   interval = preferences.getInt("interval", 300);
-  Serial.print("CAN Speed: ");
-  Serial.print(canspeed_int);
-  Serial.println();
+  //Serial.print("CAN Speed: ");
+  //Serial.print(canspeed_int);
+  //Serial.println();
   switch (canspeed_int) {
     case 100:
       CAN_cfg.speed = CAN_SPEED_100KBPS;
@@ -60,29 +60,29 @@ void setup() {
 }
 
 void change_speed(unsigned int canspeed_lok) {
-  Serial.println();
+  
+  //Serial.println();
   preferences.putUInt("canspeed", canspeed_lok);
+  /*
   Serial.print("ESP RESET! - CAN SPEED = ");
   Serial.print(canspeed_lok);
   Serial.println();
-
+  */
   ESP32Can.CANStop();
   esp_restart();
 }
 
 void output_message(CAN_frame_t& tx_frame) 
 {
-  char str[80];
   previousMillis = currentMillis;
-
-  tx_frame.FIR.B.FF = CAN_frame_std;
-
+  /*
   Serial.printf("TXs from 0x%08X, DLC %d, Data 0x", tx_frame.MsgID,
                 tx_frame.FIR.B.DLC);
   for (int i = 0; i < tx_frame.FIR.B.DLC; i++) {
     Serial.printf("%02X", tx_frame.data.u8[i]);
   }
   Serial.printf("\n");
+  */
   msgcnt++;
   if (msgcnt > 29) {
     msgcnt = 0;
@@ -97,7 +97,7 @@ int* process_serialInput()
     d = Serial.readString();
    }
 
-    //Options for configuration 
+    //Options for configuration
     if      (d == "100" && preferences.getUInt("canspeed", 500) != 100 ) change_speed(100);
     else if (d == "125" && preferences.getUInt("canspeed", 500) != 125) change_speed(125);
     else if (d == "200" && preferences.getUInt("canspeed", 500) != 200) change_speed(200);
@@ -108,7 +108,7 @@ int* process_serialInput()
     else if (d == "Help") outputHelp();
 
     //User bedient ueber GUI
-    int last_index_of_I = d.lastIndexOf('-'); //Wenn Zeichen nicht enthalten return von -1
+    int last_index_of_I = d.lastIndexOf('I'); //Wenn Zeichen nicht enthalten return von -1
     int str_len = d.length() + 1;
     static int can_message[10]; // ID + DLC + 8 Byte Payload Max
     if(last_index_of_I >= 0) 
@@ -117,12 +117,12 @@ int* process_serialInput()
       d.toCharArray(char_array, str_len);
       char *teil;
     
-      teil = strtok(char_array, "-"); 
+      teil = strtok(char_array, "I"); 
       int i = 0;
       while (teil != NULL) 
       {
         can_message[i] = atoi(teil);
-        teil = strtok(NULL, "-");
+        teil = strtok(NULL, "I");
         ++i;
       }
     }
@@ -166,7 +166,7 @@ void input_Message()
 
     if (rx_frame.FIR.B.RTR == CAN_RTR) 
     {
-      Serial.printf("CAN MSG: 0x%X [%d] <>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("CAN MSG: 0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
     } 
     else 
     {
@@ -192,25 +192,22 @@ void loop()
 
   M5.update();
 
-  if (M5.Btn.wasPressed()) outputHelp();
+  //if (M5.Btn.wasPressed()) outputHelp();
 
-  if (!(ptr_can_messages_array[0] == 0 && ptr_can_messages_array[1] == 0 && ptr_can_messages_array[2] == 0 
-                                       && ptr_can_messages_array[3] == 0 && ptr_can_messages_array[4] == 0 
-                                       && ptr_can_messages_array[5] == 0 && ptr_can_messages_array[6] == 0 
-                                       && ptr_can_messages_array[7] == 0 && ptr_can_messages_array[8] == 0
-                                       && ptr_can_messages_array[9] == 0)) //Nur wenn alles == 0 wird keine Message gesendet
+  if (ptr_can_messages_array[0] != 0 || ptr_can_messages_array[1] != 0 || ptr_can_messages_array[2] != 0)
   {
     CAN_frame_t tx_frame;
+    tx_frame.FIR.B.FF   = CAN_frame_std;
     tx_frame.MsgID      = ptr_can_messages_array[0];
     tx_frame.FIR.B.DLC  = ptr_can_messages_array[1];
-    tx_frame.data.u8[0] = ptr_can_messages_array[0];
-    tx_frame.data.u8[1] = ptr_can_messages_array[1];
-    tx_frame.data.u8[2] = ptr_can_messages_array[2];
-    tx_frame.data.u8[3] = ptr_can_messages_array[3];
-    tx_frame.data.u8[4] = ptr_can_messages_array[4];
-    tx_frame.data.u8[5] = ptr_can_messages_array[5];
-    tx_frame.data.u8[6] = ptr_can_messages_array[6];
-    tx_frame.data.u8[7] = ptr_can_messages_array[7];
+    tx_frame.data.u8[0] = ptr_can_messages_array[2];
+    tx_frame.data.u8[1] = ptr_can_messages_array[3];
+    tx_frame.data.u8[2] = ptr_can_messages_array[4];
+    tx_frame.data.u8[3] = ptr_can_messages_array[5];
+    tx_frame.data.u8[4] = ptr_can_messages_array[6];
+    tx_frame.data.u8[5] = ptr_can_messages_array[7];
+    tx_frame.data.u8[6] = ptr_can_messages_array[8];
+    tx_frame.data.u8[7] = ptr_can_messages_array[9];
 
     output_message(tx_frame);
     ESP32Can.CANWriteFrame(&tx_frame);
