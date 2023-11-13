@@ -11,7 +11,7 @@ The led from the M5Atom lights green if a correct CAN-Messages is recieved.\
 The led from the M5Atom lights yellow if more than 1s no CAN-Messages is recieved.\
 The led from the M5Atom lights blue if no valid Message has recived yet.
 
-**Possible Baudrates:**\
+**Possible Baudrates:**
 1. 100
 2. 125
 3. 200
