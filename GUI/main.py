@@ -33,8 +33,8 @@ class GUI:
         
         #start Trace Button
         self.trace_active = customtkinter.IntVar()
-        connect_button = customtkinter.CTkCheckBox(root, text='LOGGING', variable=self.trace_active, onvalue=1, offvalue=0)
-        connect_button.place(x=10, y=15)
+        self.connect_button = customtkinter.CTkCheckBox(root, text='LOGGING', variable=self.trace_active, onvalue=1, offvalue=0)
+        self.connect_button.place(x=10, y=15)
         
         #select Serialport
         self.port_var = customtkinter.StringVar(root)
@@ -73,6 +73,7 @@ class GUI:
         
     def button_event(self): #Methode die aufgerufen wird wenn SEND gedrueckt wird
         self.button_clicked = True
+        self.connect_button.deselect()
 
     def button_send_clicked(self): #Methode um den pressed Zustand des SEND Buttons auch extern zu erhalten
         return_string = ''

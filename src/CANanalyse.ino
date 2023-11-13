@@ -75,14 +75,18 @@ void change_speed(unsigned int canspeed_lok) {
 void output_message(CAN_frame_t& tx_frame) 
 {
   previousMillis = currentMillis;
-  /*
-  Serial.printf("TXs from 0x%08X, DLC %d, Data 0x", tx_frame.MsgID,
-                tx_frame.FIR.B.DLC);
-  for (int i = 0; i < tx_frame.FIR.B.DLC; i++) {
+  tx_frame.FIR.B.FF   = CAN_frame_std;
+  
+  Serial.printf("CAN MSG: 0x%X [%d] <", tx_frame.MsgID, tx_frame.FIR.B.DLC);
+  for (int i = 0; i < tx_frame.FIR.B.DLC; i++) 
+  {
+    if(i!=0) Serial.printf(":");
     Serial.printf("%02X", tx_frame.data.u8[i]);
   }
+  Serial.printf(">\n");
+    
   Serial.printf("\n");
-  */
+  
   msgcnt++;
   if (msgcnt > 29) {
     msgcnt = 0;
@@ -121,7 +125,7 @@ int* process_serialInput()
       int i = 0;
       while (teil != NULL) 
       {
-        can_message[i] = atoi(teil);
+        can_message[i] = strtol(teil, NULL, 16); //Hex String in Dezimal Interger
         teil = strtok(NULL, "I");
         ++i;
       }
@@ -184,34 +188,32 @@ void input_Message()
 
 void loop() 
 {
-  static int* ptr_can_messages_array;
-
-  ptr_can_messages_array = process_serialInput();
-
   currentMillis = millis();
 
-  M5.update();
+  static int* ptr_can_messages_array;
+  ptr_can_messages_array = process_serialInput();
+  CAN_frame_t tx_frame;
+  tx_frame.MsgID      = ptr_can_messages_array[0];
+  tx_frame.FIR.B.DLC  = ptr_can_messages_array[1];
+  tx_frame.data.u8[0] = ptr_can_messages_array[2];
+  tx_frame.data.u8[1] = ptr_can_messages_array[3];
+  tx_frame.data.u8[2] = ptr_can_messages_array[4];
+  tx_frame.data.u8[3] = ptr_can_messages_array[5];
+  tx_frame.data.u8[4] = ptr_can_messages_array[6];
+  tx_frame.data.u8[5] = ptr_can_messages_array[7];
+  tx_frame.data.u8[6] = ptr_can_messages_array[8];
+  tx_frame.data.u8[7] = ptr_can_messages_array[9];
 
-  //if (M5.Btn.wasPressed()) outputHelp();
-
-  if (ptr_can_messages_array[0] != 0 || ptr_can_messages_array[1] != 0 || ptr_can_messages_array[2] != 0)
+  if (ptr_can_messages_array[0] != 0 
+      || (ptr_can_messages_array[1] != 0 && ptr_can_messages_array[2] != 0) 
+      )
   {
-    CAN_frame_t tx_frame;
-    tx_frame.FIR.B.FF   = CAN_frame_std;
-    tx_frame.MsgID      = ptr_can_messages_array[0];
-    tx_frame.FIR.B.DLC  = ptr_can_messages_array[1];
-    tx_frame.data.u8[0] = ptr_can_messages_array[2];
-    tx_frame.data.u8[1] = ptr_can_messages_array[3];
-    tx_frame.data.u8[2] = ptr_can_messages_array[4];
-    tx_frame.data.u8[3] = ptr_can_messages_array[5];
-    tx_frame.data.u8[4] = ptr_can_messages_array[6];
-    tx_frame.data.u8[5] = ptr_can_messages_array[7];
-    tx_frame.data.u8[6] = ptr_can_messages_array[8];
-    tx_frame.data.u8[7] = ptr_can_messages_array[9];
-
     output_message(tx_frame);
     ESP32Can.CANWriteFrame(&tx_frame);
   }
 
   input_Message();
+
+  //if (M5.Btn.wasPressed()) outputHelp();
+  M5.update();
 }
