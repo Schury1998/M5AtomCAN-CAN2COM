@@ -18,7 +18,7 @@ The led from the M5Atom lights blue if no valid Message has recived yet.
 4. 250
 5. 500
 6. 800
-7. 1000\
+7. 1000
 
 **Other Information:**\
 The ESP32 always acknowledge the other bus components.\
