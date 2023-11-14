@@ -20,7 +20,8 @@ bool output_message_on = false;
 unsigned long currentMillis = 0;  //Aktuelle Systemzeit
 
 void setup() {
-  M5.begin(true, false, true);
+  M5.begin(false, false, true);
+  Serial.begin(1500000); //1500K
   preferences.begin("EEPROM1_NSP", false);
 
   unsigned int canspeed_int = preferences.getUInt("canspeed", 500);
@@ -84,13 +85,11 @@ void output_message(CAN_frame_t& tx_frame)
     Serial.printf("%02X", tx_frame.data.u8[i]);
   }
   Serial.printf(">\n");
-    
-  Serial.printf("\n");
-  
   msgcnt++;
   if (msgcnt > 29) {
     msgcnt = 0;
   }
+
 }
 
 int* process_serialInput() 
@@ -125,7 +124,7 @@ int* process_serialInput()
       int i = 0;
       while (teil != NULL) 
       {
-        can_message[i] = strtol(teil, NULL, 16); //Hex String in Dezimal Interger
+        can_message[i] = strtol(teil, NULL, 16);  //atoi(teil); ///Hex String in Dezimal Interger
         teil = strtok(NULL, "I");
         ++i;
       }

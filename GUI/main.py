@@ -72,13 +72,15 @@ class GUI:
 
         
     def button_event(self): #Methode die aufgerufen wird wenn SEND gedrueckt wird
+        self.timestamp = int((time.time_ns() - init_time) / 1000) #for ms 
         self.button_clicked = True
         self.connect_button.deselect()
-
+        
     def button_send_clicked(self): #Methode um den pressed Zustand des SEND Buttons auch extern zu erhalten
         return_string = ''
         try: 
-            id = int(self.entry_id.get(), 16)
+            id = self.entry_id.get()
+            id.replace('0x', '')
             entry_message_loc = self.entry_message.get()
             len_message = len(entry_message_loc)
             entry_message_loc = entry_message_loc.replace('0x', '')
@@ -95,6 +97,7 @@ class GUI:
             return_string = str(id) + 'I' + str(dlc) + 'I' + entry_message_byte
             print('CAN Message out: ' + return_string)
             self.light.configure(text_color="yellow")
+            time.sleep(1)
             return True, return_string
         else:
             self.button_clicked = False
@@ -132,7 +135,7 @@ class GUI:
 
 def init_SERIAL():
     if (GUI.coose_SERIAL() != 'NULL'):
-        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
+        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=1500000, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
     return s
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
