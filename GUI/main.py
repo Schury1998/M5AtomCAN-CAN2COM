@@ -3,6 +3,7 @@ import serial.tools.list_ports
 import time
 from datetime import date
 import customtkinter
+import threading
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #CLASSES------------------------------------------------------------------------------------------------------------------------------------------------
@@ -10,6 +11,14 @@ import customtkinter
 
 class GUI:
     def __init__(self, root):
+
+        #Initialisierung Variablen
+        self.message_number = 0
+        self.inititialisierung = False
+        self.port_after_init = ''
+        self.id_datenbank = self.read_sym_file('GUI/CAN.sym')
+        print(self.id_datenbank)
+
         #setting window size, title and so on
         width=1100
         height=400
@@ -64,47 +73,47 @@ class GUI:
         self.entry_message.insert(0, '0x')
 
         self.button_send = customtkinter.CTkButton(root, text="SEND", command=self.button_event)
+        self.button_send.bind('<ButtonRelease-1>', self.on_release)
         self.button_send.place(x=680, y=15)
         self.button_clicked = False
 
-        self.light = customtkinter.CTkLabel(root, text="💡", font=("Arial", 24))
-        self.light.place(x=820, y=15)
+        self.light = customtkinter.CTkLabel(root, text="Out", font=("Arial", 12))
+        self.light.place(x=825, y=15)
+
+        #Start Lese-Thread
+        threading.Thread(target=self.read_data).start()
+
+        print('Serieller Port: ' + self.coose_SERIAL())
 
         
     def button_event(self): #Methode die aufgerufen wird wenn SEND gedrueckt wird
-        self.timestamp = int((time.time_ns() - init_time) / 1000) #for ms 
-        self.button_clicked = True
-        self.connect_button.deselect()
-        
-    def button_send_clicked(self): #Methode um den pressed Zustand des SEND Buttons auch extern zu erhalten
-        return_string = ''
-        try: 
-            id = self.entry_id.get()
-            id.replace('0x', '')
-            entry_message_loc = self.entry_message.get()
-            len_message = len(entry_message_loc)
-            entry_message_loc = entry_message_loc.replace('0x', '')
-            entry_message_byte = [entry_message_loc[i:i+2] for i in range(0, len(entry_message_loc), 2)]  #String in 2er-Blöcke 
-            entry_message_byte = 'I'.join(entry_message_byte)
-            dlc = int((len(self.entry_message.get()) - 2) / 2)
-        except:
-            id = 0
-            dlc = 0
-            pass
+        self.timestamp = int((time.time_ns() - self.init_time) / 1000) #for ms 
+        id = self.entry_id.get().replace('0x', '')
+        entry_message_loc = self.entry_message.get()
+        len_message = len(entry_message_loc)
+        entry_message_loc = entry_message_loc.replace('0x', '')
+        entry_message_byte = [entry_message_loc[i:i+2] for i in range(0, len(entry_message_loc), 2)]  #String in 2er-Bloecke 
+        entry_message_byte = 'I'.join(entry_message_byte)
+        dlc = int((len(self.entry_message.get()) - 2) / 2)
 
-        if self.button_clicked and (id != 0 or dlc != 0) and (len_message % 2 == 0):
-            self.button_clicked = False
+        return_string = ''
+        if (id is not '' or dlc is not 0) and (len_message % 2 == 0):
             return_string = str(id) + 'I' + str(dlc) + 'I' + entry_message_byte
             print('CAN Message out: ' + return_string)
-            self.light.configure(text_color="yellow")
-            time.sleep(1)
-            return True, return_string
+            self.light.configure(text_color="green")
+            if (self.inititialisierung is True):
+                bytes_data = return_string.encode('Ascii')
+                self.s.write(bytes_data) #EXAMPLE: 16I2I33I55 -> ID:0x10 DTL:2 Pyload:0x21 0x37
         else:
-            self.button_clicked = False
-            self.light.configure(text_color="black")
-            return False, return_string
+            self.light.configure(text_color="red")
 
-    
+        self.connect_button.deselect()
+
+
+    def on_release(self, event):
+        self.light.configure(text_color="white")
+
+
     def coose_SERIAL(self): #Methode die verfuegbare Ports anzeigt und den gewaehlten Port zurueckgibt
         self.ports = [port.device for port in serial.tools.list_ports.comports()]
         #choose inital Port 
@@ -120,7 +129,7 @@ class GUI:
             self.port_menu.configure(values = self.ports)
         #return choosen port
         return self.port_var.get()
-
+    
 
     def output_CAN(self, string): #Methode zur wiedergabe eines Strings in der Texbox
         self.T.configure(state='normal')
@@ -133,179 +142,159 @@ class GUI:
         return self.trace_active.get()
 
 
-def init_SERIAL():
-    if (GUI.coose_SERIAL() != 'NULL'):
-        s = serial.Serial(port=GUI.coose_SERIAL(), baudrate=1500000, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
-    return s
-
-#---------------------------------------------------------------------------------------------------------------------------------------------------------
-#FUNCTIONS------------------------------------------------------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------------------------------------------------------------
-
-def init_LOGGING_FILE():
-    aktuellesDatum = str(date.today())
-    tiemstamp = str(time.asctime())
-    timestamp_list = tiemstamp.split()
-
-    fiele_name = aktuellesDatum + '_' + timestamp_list[3].replace(':','-') +  '_log' +  '.txt'
-    f = open('GUI/log.trc', 'w')
-
-    starttime_list = timestamp_list[3].split(':')
-    starttime = int(starttime_list[0]) * 60 * 60 #h in s
-    starttime = starttime + int(starttime_list[1]) * 60 #min in s
-    starttime_string = str(starttime) + '.' + starttime_list[2]
-
-    ausgabe_string = (';$FILEVERSION=1.0'
-                    + '\n'
-                    + ';$STARTTIME=' + starttime_string
-                    + '\n'
-                    + ';'
-                    + '\n'
-                    + ';   Start time: ' +  aktuellesDatum + ' ' +  timestamp_list[3] 
-                    + '\n'
-                    + ';   Generated by SUSF-CAN-Explorer v1.0.0.0'
-                    + '\n'
-                    + ';-------------------------------------------------------------------------------'
-                    + '\n'
-                    + ';   Bus  Connection   Net Connection     Protocol  Bit rate'
-                    + '\n'
-                    + ';   1    Verbindung1  M5Atom             CAN       Controller Setup'
-                    + '\n'
-                    + ';-------------------------------------------------------------------------------'
-                    + '\n'
-                    + ';   Message   Time    Bus  Type   ID    Reserved'
-                    + '\n'
-                    + ';   Number    Offset  |    |      [hex] |   Data Length Code'
-                    + '\n'
-                    + ';   |         [ms]    |    |      |     |   |    Data [hex] ...'
-                    + '\n'
-                    + ';   |         |       |    |      |     |   |    |'
-                    + '\n'
-                    + ';---+-- ------+------ +- --+-- ---+---- +- -+-- -+ -- -- -- -- -- -- --'
-                    + '\n')
-    
-    f.write(ausgabe_string)
-    GUI.output_CAN(ausgabe_string)
-    f.close()
-    return fiele_name
+    def init_SERIAL(self):
+        if (self.coose_SERIAL() != 'NULL'):
+            ser = serial.Serial(port=self.coose_SERIAL(), baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE) #115200 #1500000
+        return ser
 
 
-def read_sym_file(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    id_datenbank = []
-    for i in range(1, len(lines)):
-        if 'ID=' in lines[i]:
-            id_str = lines[i].split('ID=')[1].strip()
-            id_str = id_str.replace('h', '')  
-            id_int = int(id_str) 
-            id_datenbank.append(lines[i-1].strip())
-            id_datenbank.append(id_int)
-    return id_datenbank
+    def close(self, s):
+        self.s.close()  # Dann die Verbindung schliessen
+        print('Serial Port closed')
 
-def close(s):
-    root.destroy()  # Fenster schließen
-    s.close()  # Dann die Verbindung schließen
-    print('Serial Port closed')
+
+    def read_data(self):
+        while True:
+            if ((self.coose_SERIAL() != 'NULL') and self.inititialisierung is False):
+                self.s = self.init_SERIAL()
+                fiele_name = self.init_LOGGING_FILE()
+                self.init_time = time.time_ns()
+                self.inititialisierung = True
+                self.port_after_init = self.coose_SERIAL()
+            elif (self.port_after_init != self.coose_SERIAL() and self.inititialisierung is True ):
+                self.s.close()
+                self.s= self.init_SERIAL()
+                self.inititialisierung = True
+                self.port_after_init = self.coose_SERIAL()
+            elif (self.coose_SERIAL() != 'NULL' and self.inititialisierung is True):
+                #to ignore incoming messages when the checkBox is not acitve
+                if(self.acitve_trace_box() !=  1):
+                    self.s.read_all() 
+
+                # Wait until there is data waiting in the serial buffer
+                if self.s.in_waiting > 0 and self.acitve_trace_box() ==  1:
+
+                    # Read data out of the buffer until a carraige return / new line is found
+                    serialString = self.s.readline()
+
+                    # Print the contents of the serial data
+                    try:
+                        list = serialString.decode('Ascii').split()
+                        del list[0]
+                        del list[0]
+                        timestamp = int((time.time_ns() - self.init_time) / 1000) #for ms 
+                        timestamp_string = str(timestamp) 
+                        timestamp_string_len = len(timestamp_string)
+
+                        if (timestamp_string_len <= 3):
+                            timestamp_string = 0 + '.' + timestamp_string[timestamp_string_len-3:]
+                        else:
+                            timestamp_string = timestamp_string[:timestamp_string_len-3] + '.' + timestamp_string[timestamp_string_len-3:]
+
+                        list.insert(0, timestamp_string)
+                        list[1] = list[1].replace('0x','')
+                        list[2] = list[2].replace('[','')
+                        list[2] = list[2].replace(']','')
+                        list[3] = list[3].replace('<','')
+                        list[3] = list[3].replace('>','')
+                        list[3] = list[3].replace('>','')
+                        list[3] = list[3].replace(':',' ')
+                        
+                        # Insert missing Parameters
+                        self.message_number = self.message_number + 1
+                        message_number_string = str(self.message_number) + ')'
+                        list.insert(0, message_number_string)
+                        list.insert(2, '1') #Bus = 1
+                        list.insert(3, 'Rx') #Type = Rx
+                        list.insert(5, '-') #Reserved
+
+                        #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
+                        print(list)
+                        f = open('GUI/log.trc', 'a')
+                        ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
+                        f.write(ausgabe_string)
+                        f.close()
+
+                        if int(list[4]) in self.id_datenbank:
+                            index_id_datenbank = self.id_datenbank.index(int(list[4]))
+                            list[4] = list[4] + ' -> ' + self.fid_datenbank[index_id_datenbank - 1]
+
+                        ausgabe_string = '' + list[0] + '\t' + list[1] + '\t\t' + list[2] + ' ' + list[3] + '\t' + list[4] + '\t\t\t\t\t' + list[5] + ' ' + list[6] + '\t' + list[7] + '\n'
+                        self.output_CAN(ausgabe_string)
+                    except:
+                        pass
+
+
+    #Methode wird nur zu Beginn genutzt
+    def init_LOGGING_FILE(self):
+        aktuellesDatum = str(date.today())
+        tiemstamp = str(time.asctime())
+        timestamp_list = tiemstamp.split()
+
+        fiele_name = aktuellesDatum + '_' + timestamp_list[3].replace(':','-') +  '_log' +  '.txt'
+        f = open('GUI/log.trc', 'w')
+
+        starttime_list = timestamp_list[3].split(':')
+        starttime = int(starttime_list[0]) * 60 * 60 #h in s
+        starttime = starttime + int(starttime_list[1]) * 60 #min in s
+        starttime_string = str(starttime) + '.' + starttime_list[2]
+
+        ausgabe_string = (';$FILEVERSION=1.0'
+                        + '\n'
+                        + ';$STARTTIME=' + starttime_string
+                        + '\n'
+                        + ';'
+                        + '\n'
+                        + ';   Start time: ' +  aktuellesDatum + ' ' +  timestamp_list[3] 
+                        + '\n'
+                        + ';   Generated by SUSF-CAN-Explorer v1.0.0.0'
+                        + '\n'
+                        + ';-------------------------------------------------------------------------------'
+                        + '\n'
+                        + ';   Bus  Connection   Net Connection     Protocol  Bit rate'
+                        + '\n'
+                        + ';   1    Verbindung1  M5Atom             CAN       Controller Setup'
+                        + '\n'
+                        + ';-------------------------------------------------------------------------------'
+                        + '\n'
+                        + ';   Message   Time    Bus  Type   ID    Reserved'
+                        + '\n'
+                        + ';   Number    Offset  |    |      [hex] |   Data Length Code'
+                        + '\n'
+                        + ';   |         [ms]    |    |      |     |   |    Data [hex] ...'
+                        + '\n'
+                        + ';   |         |       |    |      |     |   |    |'
+                        + '\n'
+                        + ';---+-- ------+------ +- --+-- ---+---- +- -+-- -+ -- -- -- -- -- -- --'
+                        + '\n')
+        
+        f.write(ausgabe_string)
+        self.output_CAN(ausgabe_string)
+        f.close()
+        return fiele_name
+
+
+    #Methode wird nur zu Beginn genutzt
+    def read_sym_file(self, file_path):
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+        id_datenbank = []
+        for i in range(1, len(lines)):
+            if 'ID=' in lines[i]:
+                id_str = lines[i].split('ID=')[1].strip()
+                id_str = id_str.replace('h', '')  
+                id_int = int(id_str) 
+                id_datenbank.append(lines[i-1].strip())
+                id_datenbank.append(id_int)
+        return id_datenbank
+
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #MAIN-----------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
-
 if __name__ == '__main__':
-    
     root = customtkinter.CTk()
     GUI = GUI(root)
-    message_number = 0
-    inititialisierung = False
-    port_after_init = ''
-
-    id_datenbank = read_sym_file('GUI/CAN.sym')
-    print(id_datenbank)
-    print('Serieller Port: ' + GUI.coose_SERIAL())
-
-    while 1:
-        root.update()
-
-        if ((GUI.coose_SERIAL() != 'NULL') and inititialisierung is False):
-            s= init_SERIAL()
-            fiele_name = init_LOGGING_FILE()
-            init_time = time.time_ns()
-            inititialisierung = True
-            port_after_init = GUI.coose_SERIAL()
-        elif (port_after_init != GUI.coose_SERIAL() and inititialisierung is True ):
-            s.close()
-            s= init_SERIAL()
-            inititialisierung = True
-            port_after_init = GUI.coose_SERIAL()
-        elif (GUI.coose_SERIAL() != 'NULL' and inititialisierung is True):
-            #to ignore incoming messages when the checkBox is not acitve
-            if(GUI.acitve_trace_box() !=  1):
-                s.read_all() 
-
-            bool_send, serial_output_string = GUI.button_send_clicked()
-            if (bool_send is True and inititialisierung is True):
-                bytes_data = serial_output_string.encode('Ascii')
-                s.write(bytes_data) #EXAMPLE: 16I2I33I55 -> ID:0x10 DTL:2 Pyload:0x21 0x37
-
-            if s.is_open:
-                try:
-                    root.wm_protocol('WM_DELETE_WINDOW', lambda: close(s)) 
-                except:
-                    pass
-
-            # Wait until there is data waiting in the serial buffer
-            if s.in_waiting > 0 and GUI.acitve_trace_box() ==  1:
-
-                # Read data out of the buffer until a carraige return / new line is found
-                serialString = s.readline()
-
-                # Print the contents of the serial data
-                try:
-                    list = serialString.decode('Ascii').split()
-                    del list[0]
-                    del list[0]
-                    timestamp = int((time.time_ns() - init_time) / 1000) #for ms 
-                    timestamp_string = str(timestamp) 
-                    timestamp_string_len = len(timestamp_string)
-
-                    if (timestamp_string_len <= 3):
-                        timestamp_string = 0 + '.' + timestamp_string[timestamp_string_len-3:]
-                    else:
-                        timestamp_string = timestamp_string[:timestamp_string_len-3] + '.' + timestamp_string[timestamp_string_len-3:]
-
-                    list.insert(0, timestamp_string)
-                    list[1] = list[1].replace('0x','')
-                    list[2] = list[2].replace('[','')
-                    list[2] = list[2].replace(']','')
-                    list[3] = list[3].replace('<','')
-                    list[3] = list[3].replace('>','')
-                    list[3] = list[3].replace('>','')
-                    list[3] = list[3].replace(':',' ')
-                    
-                    # Insert missing Parameters
-                    message_number = message_number + 1
-                    message_number_string = str(message_number) + ')'
-                    list.insert(0, message_number_string)
-                    list.insert(2, '1') #Bus = 1
-                    list.insert(3, 'Rx') #Type = Rx
-                    list.insert(5, '-') #Reserved
-
-                    #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
-                    print(list)
-                    f = open('GUI/log.trc', 'a')
-                    ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
-                    f.write(ausgabe_string)
-                    f.close()
-
-                    if int(list[4]) in id_datenbank:
-                        index_id_datenbank = id_datenbank.index(int(list[4]))
-                        list[4] = list[4] + ' -> ' + id_datenbank[index_id_datenbank - 1]
-
-                    ausgabe_string = '' + list[0] + '\t' + list[1] + '\t\t' + list[2] + ' ' + list[3] + '\t' + list[4] + '\t\t\t\t\t' + list[5] + ' ' + list[6] + '\t' + list[7] + '\n'
-                    GUI.output_CAN(ausgabe_string)
-                except:
-                    pass
+    root.mainloop()
         
-
 
