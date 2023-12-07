@@ -1,6 +1,6 @@
 # CAN-Analyse-M5AtomCAN
 
-# INFO: The last tests weren't made yet but in testing codition everything worked
+## INFO: The last tests weren't made yet but in testing condition everything worked
 
 ## Description
 Tool to analyse CAN Messages with different baudrates.
