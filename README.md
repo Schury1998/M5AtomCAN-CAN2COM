@@ -1,10 +1,12 @@
 # CAN-Analyse-M5AtomCAN
 
+## INFO: The last tests weren't made yet but in testing condition everything worked
+
 ## Description
 Tool to analyse CAN Messages with different baudrates.
 
-**SerialInterface**\
-The ESP32 uses an baudrate from 115200.
+**Serial Interface**\
+ESP32
 
 **LED & Button Features:**\
 The led from the M5Atom lights green if a correct CAN-Messages is recieved.\
