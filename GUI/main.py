@@ -21,7 +21,7 @@ class GUI:
 
         #setting window size, title and so on
         width=1100
-        height=400
+        height=700
         screenwidth = root.winfo_screenwidth()
         screenheight = root.winfo_screenheight()
         alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
@@ -75,10 +75,13 @@ class GUI:
         self.button_send = customtkinter.CTkButton(root, text="SEND", command=self.button_event)
         self.button_send.bind('<ButtonRelease-1>', self.on_release)
         self.button_send.place(x=680, y=15)
-        self.button_clicked = False
 
         self.light = customtkinter.CTkLabel(root, text="Out", font=("Arial", 12))
         self.light.place(x=825, y=15)
+
+        #DEV option to change baud rate etc.
+        self.button_send = customtkinter.CTkButton(root, text="DEV", width=35, height=10, command= lambda: self.dev_window(root), fg_color = "grey")
+        self.button_send.place(x=1060, y=0)
 
         #Start Lese-Thread
         threading.Thread(target=self.read_data).start()
@@ -86,7 +89,50 @@ class GUI:
         print('Serieller Port: ' + self.coose_SERIAL())
 
         
+    def dev_window(self, root): #Methode die aufgerufen wird wenn DEV gedruckt wird
+        self.connect_button.deselect()
+
+        #def buttonCLOSEclick():
+            #tkFensterDEV.quit()
+            #tkFensterDEV.destroy()
+            #self.dev_thread.join()
+
+        def send_data_raw():
+            data = entry.get()
+            if (self.coose_SERIAL() != 'NULL' and self.inititialisierung is True):
+                self.s.write(data.encode('utf-8'))
+        
+        def read_data_raw():
+            while True:
+                data = self.s.readline().decode('utf-8').strip()
+                text.insert(customtkinter.END, data + '\n')
+                text.see("end")
+
+        # Neues Fenster öffnen
+        tkFensterDEV = customtkinter.CTkToplevel(root)
+        tkFensterDEV.resizable(False, False)
+        tkFensterDEV.after(250, lambda: tkFensterDEV.iconbitmap('GUI/ICON.ico'))
+        tkFensterDEV.title('DEV')
+        #Eingabe Serial
+        entry = customtkinter.CTkEntry(tkFensterDEV)
+        entry.pack(pady=10)
+        #Senden Button
+        button = customtkinter.CTkButton(tkFensterDEV, text="send_raw", command=send_data_raw)
+        button.pack(pady=10)
+        #Read Serial - Ausgabe
+        text = customtkinter.CTkTextbox(tkFensterDEV, activate_scrollbars=True)
+        text.pack(pady=10)
+
+        # Start DEV Read Thread
+        self.dev_thread = threading.Thread(target=read_data_raw)
+        self.dev_thread.start()
+        #Close Window
+        #button_close = customtkinter.CTkButton(tkFensterDEV, text='close_DEV', command=buttonCLOSEclick)
+        #button_close.pack(pady=10)
+        
+
     def button_event(self): #Methode die aufgerufen wird wenn SEND gedrueckt wird
+        self.connect_button.deselect()
         self.timestamp = int((time.time_ns() - self.init_time) / 1000) #for ms 
         id = self.entry_id.get().replace('0x', '')
         entry_message_loc = self.entry_message.get()
@@ -97,7 +143,7 @@ class GUI:
         dlc = int((len(self.entry_message.get()) - 2) / 2)
 
         return_string = ''
-        if (id is not '' or dlc is not 0) and (len_message % 2 == 0):
+        if (id != '' or dlc != 0) and (len_message % 2 == 0):
             return_string = str(id) + 'I' + str(dlc) + 'I' + entry_message_byte
             print('CAN Message out: ' + return_string)
             self.light.configure(text_color="green")
@@ -106,8 +152,6 @@ class GUI:
                 self.s.write(bytes_data) #EXAMPLE: 16I2I33I55 -> ID:0x10 DTL:2 Pyload:0x21 0x37
         else:
             self.light.configure(text_color="red")
-
-        self.connect_button.deselect()
 
 
     def on_release(self, event):
@@ -120,13 +164,15 @@ class GUI:
         if  (self.frist_run_choose_serial is True and len(self.ports) >= 1): 
             self.port_var.set(self.ports[0])
             self.frist_run_choose_serial = False
+            self.actual_ports = self.ports
         #insert 'NULL' if no serial device
         if(len(self.ports) < 1): 
             self.port_var.set('NULL')
             self.port_menu.configure()
         #update available ports
-        else:
+        elif (self.ports != self.actual_ports):
             self.port_menu.configure(values = self.ports)
+            self.actual_ports = self.ports
         #return choosen port
         return self.port_var.get()
     
@@ -210,14 +256,14 @@ class GUI:
 
                         #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
                         print(list)
-                        f = open('GUI/log.trc', 'a')
+                        f = open('GUI/log.trc', 'a') #fiele_name
                         ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
                         f.write(ausgabe_string)
                         f.close()
 
                         if int(list[4]) in self.id_datenbank:
                             index_id_datenbank = self.id_datenbank.index(int(list[4]))
-                            list[4] = list[4] + ' -> ' + self.fid_datenbank[index_id_datenbank - 1]
+                            list[4] = list[4] + ' -> ' + self.id_datenbank[index_id_datenbank - 1]
 
                         ausgabe_string = '' + list[0] + '\t' + list[1] + '\t\t' + list[2] + ' ' + list[3] + '\t' + list[4] + '\t\t\t\t\t' + list[5] + ' ' + list[6] + '\t' + list[7] + '\n'
                         self.output_CAN(ausgabe_string)
@@ -232,7 +278,7 @@ class GUI:
         timestamp_list = tiemstamp.split()
 
         fiele_name = aktuellesDatum + '_' + timestamp_list[3].replace(':','-') +  '_log' +  '.txt'
-        f = open('GUI/log.trc', 'w')
+        f = open('GUI/log.trc', 'w') #fiele_name
 
         starttime_list = timestamp_list[3].split(':')
         starttime = int(starttime_list[0]) * 60 * 60 #h in s
