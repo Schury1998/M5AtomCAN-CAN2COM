@@ -5,7 +5,7 @@
 ## Description
 Tool to analyse CAN Messages with different baudrates.
 
-**SerialInterface**\
+**Serial Interface**\
 ESP32
 
 **LED & Button Features:**\
