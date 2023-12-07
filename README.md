@@ -4,7 +4,7 @@
 Tool to analyse CAN Messages with different baudrates.
 
 **SerialInterface**\
-The ESP32 uses an baudrate from 115200.
+ESP32
 
 **LED & Button Features:**\
 The led from the M5Atom lights green if a correct CAN-Messages is recieved.\
