@@ -2,7 +2,7 @@
 
 ## INFO: The last tests weren't made yet but in testing condition everything worked
 
-## Description
+## Hardware to get CAN Messages - M5AtomCAN
 Tool to analyse CAN Messages with different baudrates.
 
 **Serial Interface**\
@@ -33,3 +33,15 @@ CAN MSG: 0x710 [8] <02:10:03:00:00:00:00:00>
 **Possible serial Inputs:**\
 100, 125, 200, 250, 500. 800 , 1000 \
 The numbers to change the Baudrate.
+
+## GUI
+GUI in Python using CustomTkinter
+
+**Imports for Python**\
+serial, time, datetime customtkinter, threading/
+pip install threaded customtkinter pyserial DateTime
+
+**Use the GUI**
+- Log and see incoming Messages (main use)
+- Send one Message
+- Dev window for change the baudrate oder debugging etc.
