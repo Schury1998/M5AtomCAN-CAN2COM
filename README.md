@@ -34,13 +34,13 @@ CAN MSG: 0x710 [8] <02:10:03:00:00:00:00:00>
 100, 125, 200, 250, 500. 800 , 1000 \
 The numbers to change the Baudrate. \
 You can also send CAN-Messages: \
-<ID> I <DTLC> I <Payload Byte0 & Byte1> I <Payload Byte2 & Byte3> I ...........
+ID I DTLC I Payload_Byte0_Byte1 I Payload_Byte2_Byte3 I ...
 
 ## GUI
 GUI in Python using CustomTkinter
 
 **Imports for Python**\
-pip install <threaded> <customtkinter> <pyserial> <DateTime>
+pip install threaded customtkinter pyserial DateTime
 
 **Use the GUI**
 - Log and see incoming Messages (main use)
