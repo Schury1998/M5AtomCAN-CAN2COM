@@ -1,4 +1,4 @@
-# CAN-Analyse-M5AtomCAN
+# CAN-Analyse with the M5AtomCAN - Very simple CAN-Analyse and Logging-Tool
 
 ## INFO: The last tests weren't made yet but in testing condition everything worked
 
