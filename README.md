@@ -40,8 +40,7 @@ You can also send CAN-Messages: \
 GUI in Python using CustomTkinter
 
 **Imports for Python**\
-serial, time, datetime customtkinter, threading \
-pip install threaded customtkinter pyserial DateTime
+pip install <threaded> <customtkinter> <pyserial> <DateTime>
 
 **Use the GUI**
 - Log and see incoming Messages (main use)
