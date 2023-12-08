@@ -32,7 +32,7 @@ CAN MSG: 0x710 [8] <02:10:03:00:00:00:00:00>
 
 **Possible serial Inputs:**\
 100, 125, 200, 250, 500. 800 , 1000 - The numbers to change the Baudrate. \
-You can also send CAN-Messages: ID I DTLC I Payload_Byte0_Byte1 I Payload_Byte2_Byte3 I ...
+ID I DTLC I Payload_Byte0_Byte1 I Payload_Byte2_Byte3 I ... - Structure to send CAN-Messages 
 
 ## GUI
 GUI in Python using CustomTkinter
