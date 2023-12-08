@@ -178,10 +178,10 @@ class GUI:
     
 
     def output_CAN(self, string): #Methode zur wiedergabe eines Strings in der Texbox
-        self.T.configure(state='normal')
+        #self.T.configure(state='normal') #Perfomance einbussen
         self.T.insert('end', string)
-        self.T.configure(state='disabled')
-        self.T.see('end')
+        #self.T.configure(state='disabled') #Perfomance einbussen
+        #self.T.see('end')
 
 
     def acitve_trace_box(self): #Status des Trace Buttons abfrage
@@ -190,7 +190,7 @@ class GUI:
 
     def init_SERIAL(self):
         if (self.coose_SERIAL() != 'NULL'):
-            ser = serial.Serial(port=self.coose_SERIAL(), baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE) #115200 #1500000
+            ser = serial.Serial(port=self.coose_SERIAL(), baudrate=1500000, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE) #115200 #1500000
         return ser
 
 
@@ -207,6 +207,7 @@ class GUI:
                 self.init_time = time.time_ns()
                 self.inititialisierung = True
                 self.port_after_init = self.coose_SERIAL()
+                f = open('GUI/log.trc', 'a') #fiele_name
             elif (self.port_after_init != self.coose_SERIAL() and self.inititialisierung is True ):
                 self.s.close()
                 self.s= self.init_SERIAL()
@@ -216,6 +217,7 @@ class GUI:
                 #to ignore incoming messages when the checkBox is not acitve
                 if(self.acitve_trace_box() !=  1):
                     self.s.read_all() 
+                    #f.close()
 
                 # Wait until there is data waiting in the serial buffer
                 if self.s.in_waiting > 0 and self.acitve_trace_box() ==  1:
@@ -226,8 +228,6 @@ class GUI:
                     # Print the contents of the serial data
                     try:
                         list = serialString.decode('Ascii').split()
-                        del list[0]
-                        del list[0]
                         timestamp = int((time.time_ns() - self.init_time) / 1000) #for ms 
                         timestamp_string = str(timestamp) 
                         timestamp_string_len = len(timestamp_string)
@@ -256,10 +256,9 @@ class GUI:
 
                         #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
                         print(list)
-                        f = open('GUI/log.trc', 'a') #fiele_name
                         ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
                         f.write(ausgabe_string)
-                        f.close()
+                        
 
                         if int(list[4]) in self.id_datenbank:
                             index_id_datenbank = self.id_datenbank.index(int(list[4]))

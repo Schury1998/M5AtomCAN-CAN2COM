@@ -62,13 +62,13 @@ void setup() {
 
 void change_speed(unsigned int canspeed_lok) {
   
-  //Serial.println();
+  Serial.println();
   preferences.putUInt("canspeed", canspeed_lok);
-  /*
+  
   Serial.print("ESP RESET! - CAN SPEED = ");
   Serial.print(canspeed_lok);
   Serial.println();
-  */
+  
   ESP32Can.CANStop();
   esp_restart();
 }
@@ -169,11 +169,11 @@ void input_Message()
 
     if (rx_frame.FIR.B.RTR == CAN_RTR) 
     {
-      Serial.printf("CAN MSG: 0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
     } 
     else 
     {
-      Serial.printf("CAN MSG: 0x%X [%d] <", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("0x%X [%d] <", rx_frame.MsgID, rx_frame.FIR.B.DLC);
       for (int i = 0; i < rx_frame.FIR.B.DLC; i++) 
       {
         if(i!=0) Serial.printf(":");

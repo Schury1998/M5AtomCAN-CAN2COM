@@ -12,7 +12,7 @@ Var="Wert Poti 3" unsigned 32,16
 Var="Wert Poti 4" unsigned 48,16
 
 ["ID_710  HMI -> CONROL"]
-ID=710h
+ID=91h
 Len=8
 Var="Wert Poti 5" unsigned 0,16
 Var="Wert Poti 6" unsigned 16,16
