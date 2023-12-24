@@ -27,8 +27,8 @@ The ESP32 always acknowledge the other bus components.\
 Maybe you ned a termination resistor (120Ohm).
 
 **Example of the serial Output of the uC**\
-CAN MSG: 0x200 [7] <1F:C0:00:10:00:03:01> \
-CAN MSG: 0x710 [8] <02:10:03:00:00:00:00:00>
+0x200 [7] <1F:C0:00:10:00:03:01> \
+0x710 [8] <02:10:03:00:00:00:00:00>
 
 **Possible serial Inputs:**\
 100, 125, 200, 250, 500. 800 , 1000 - The numbers to change the Baudrate. \

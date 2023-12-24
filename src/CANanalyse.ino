@@ -84,7 +84,8 @@ void output_message(CAN_frame_t& tx_frame)
     if(i!=0) Serial.printf(":");
     Serial.printf("%02X", tx_frame.data.u8[i]);
   }
-  Serial.printf(">\n");
+  Serial.printf(">");
+  Serial.println();
   msgcnt++;
   if (msgcnt > 29) {
     msgcnt = 0;
@@ -169,7 +170,8 @@ void input_Message()
 
     if (rx_frame.FIR.B.RTR == CAN_RTR) 
     {
-      Serial.printf("0x%X [%d] <RTR>\n", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.printf("0x%X [%d] <RTR>", rx_frame.MsgID, rx_frame.FIR.B.DLC);
+      Serial.println();
     } 
     else 
     {
@@ -179,7 +181,8 @@ void input_Message()
         if(i!=0) Serial.printf(":");
         Serial.printf("%02X", rx_frame.data.u8[i]);
       }
-      Serial.printf(">\n");
+      Serial.printf(">");
+      Serial.println();
     }
   }
   if ((currentMillis - previousMillis_r >= interval_r) && mscount_rx > 0) M5.dis.drawpix(0, 0xffff00);  //Orange wenn keine Messages kommen
@@ -188,7 +191,7 @@ void input_Message()
 void loop() 
 {
   currentMillis = millis();
-
+  
   static int* ptr_can_messages_array;
   ptr_can_messages_array = process_serialInput();
   CAN_frame_t tx_frame;
@@ -213,6 +216,11 @@ void loop()
 
   input_Message();
 
+  //Serial.printf("0x710 [8] <02:10:03:00:00:00:00:00>");
+  //Serial.flush();
+  //Serial.println();
+  //Serial.flush();
+  
   //if (M5.Btn.wasPressed()) outputHelp();
   M5.update();
 }
