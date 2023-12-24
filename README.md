@@ -1,6 +1,6 @@
 # CAN-Analyse with the M5AtomCAN - Very simple CAN-Analyse and Logging-Tool
 
-## INFO: The last tests weren't made yet but in testing condition everything worked
+## The Serial Interface is not perfect for CAN-Analyse, but for the private use it's fine
 
 ## Hardware to get CAN Messages - M5AtomCAN
 Tool to analyse CAN Messages with different baudrates.

@@ -18,6 +18,7 @@ class GUI:
         self.port_after_init = ''
         self.id_datenbank = self.read_sym_file('GUI/CAN.sym')
         print(self.id_datenbank)
+        self.flase_serial_message = False
 
         #setting window size, title and so on
         width=1100
@@ -255,17 +256,26 @@ class GUI:
                         list.insert(5, '-') #Reserved
 
                         #example list: ['1)', '.0', 1, 'Rx', '710', '-', '8', '02 10 03 00 00 00 00 00']
-                        print(list)
-                        ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
-                        f.write(ausgabe_string)
-                        
+                        payload = list[7]
+                        dlc = int(list[6])
+                        if (len(list) == 8 and len(payload) == ((dlc * 2) + (dlc - 1)) and self.flase_serial_message == False): #To ignore false Messages on the Serial Interface
+                            print(list)
+                            ausgabe_string = ' ' + list[0] + ' ' + list[1] + ' ' + list[2] + ' ' + list[3] + ' ' + list[4] + ' ' + list[5] + ' ' + list[6] + ' ' + list[7] + '\n'
+                            f.write(ausgabe_string)
+                            
 
-                        if int(list[4]) in self.id_datenbank:
-                            index_id_datenbank = self.id_datenbank.index(int(list[4]))
-                            list[4] = list[4] + ' -> ' + self.id_datenbank[index_id_datenbank - 1]
+                            if int(list[4]) in self.id_datenbank:
+                                index_id_datenbank = self.id_datenbank.index(int(list[4]))
+                                list[4] = list[4] + ' -> ' + self.id_datenbank[index_id_datenbank - 1]
 
-                        ausgabe_string = '' + list[0] + '\t' + list[1] + '\t\t' + list[2] + ' ' + list[3] + '\t' + list[4] + '\t\t\t\t\t' + list[5] + ' ' + list[6] + '\t' + list[7] + '\n'
-                        self.output_CAN(ausgabe_string)
+                            ausgabe_string = '' + list[0] + '\t' + list[1] + '\t\t' + list[2] + ' ' + list[3] + '\t' + list[4] + '\t\t\t\t\t' + list[5] + ' ' + list[6] + '\t' + list[7] + '\n'
+                            self.output_CAN(ausgabe_string)
+                        elif self.flase_serial_message == True:
+                            self.flase_serial_message = False
+                            time.wait(1)
+                        elif self.flase_serial_message == False:
+                            self.flase_serial_message = True
+
                     except:
                         pass
 
