@@ -1,6 +1,6 @@
 # CAN-Analyse with the M5AtomCAN - Very simple CAN-Analyse and Logging-Tool
 
-## The Serial Interface is not perfect for CAN-Analyse, but for the private use it's fine
+## The Serial Interface is not perfect for CAN-Analyse, but for the private use it's fine. The same GUI for the PEAK USB Dongel and the same funktionality - read and write - simple CAN Frames is local on my PC. If someone need this, please write!
 
 ## Hardware to get CAN Messages - M5AtomCAN
 Tool to analyse CAN Messages with different baudrates.
